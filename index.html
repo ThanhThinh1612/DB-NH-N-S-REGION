@@ -596,11 +596,11 @@
       background-color: #111827;
       font-weight: 500;
       border-right: 2px solid rgba(255, 255, 255, 0.08);
-      min-width: 280px;
-      max-width: 380px;
-      white-space: normal !important;
-      overflow-wrap: break-word !important;
-      word-break: break-word !important;
+      min-width: 150px;
+      max-width: 200px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* Alternate background for rows */
@@ -1719,7 +1719,7 @@
 
         // Render cell values
         tr.innerHTML = `
-          <td title="${escapeHTML(item.name)}" style="text-align:left; max-width:380px; min-width:280px; white-space:normal !important; overflow-wrap:break-word !important; word-break:break-word !important; position:sticky; left:0; background-color:#111827; z-index:5; border-right: 2px solid rgba(255, 255, 255, 0.08);">${escapeHTML(item.name)}</td>
+          <td title="${escapeHTML(item.name)}" style="text-align:left; max-width:200px; min-width:150px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:sticky; left:0; background-color:#111827; z-index:5; border-right: 2px solid rgba(255, 255, 255, 0.08);">${escapeHTML(item.name)}</td>
           <td>${formatNumber(item.nghi_7)}</td>
           <td>${formatNumber(item.nghi_14)}</td>
           <td class="font-semibold">${formatNumber(item.nghi_30)}</td>
@@ -1854,7 +1854,7 @@
         
         tr.innerHTML = `
           <!-- Tên đơn vị (Sticky column) -->
-          <td class="font-medium" style="text-align:left; max-width:320px; white-space:normal !important; overflow-wrap:break-word !important; word-break:break-word !important; position:sticky; left:0; background-color:#111827; z-index:4; border-right: 2px solid rgba(255, 255, 255, 0.08);" title="${escapeHTML(item.name)}">${escapeHTML(item.name)}</td>
+          <td class="font-medium" style="text-align:left; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:sticky; left:0; background-color:#111827; z-index:4; border-right: 2px solid rgba(255, 255, 255, 0.08);" title="${escapeHTML(item.name)}">${escapeHTML(item.name)}</td>
           
           <!-- NHÓM 1 -->
           <td class="text-danger">${formatNumber(item.nghi_7)}</td>
@@ -1914,7 +1914,7 @@
           const shortageClass = item.so_thieu > 0 ? 'text-danger' : 'text-success';
           
           tr.innerHTML = `
-            <td class="font-medium" style="text-align:left; max-width:320px; white-space:normal !important; overflow-wrap:break-word !important; word-break:break-word !important;" title="${escapeHTML(item.name)}">${escapeHTML(item.name)}</td>
+            <td class="font-medium" style="text-align:left; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapeHTML(item.name)}">${escapeHTML(item.name)}</td>
             <td>${escapeHTML(item.vung)}</td>
             <td class="font-semibold text-cyan">${item.score.toFixed(1)}</td>
             <td class="text-danger">${formatNumber(item.nghi_30)}</td>
