@@ -432,6 +432,13 @@
       border-collapse: collapse;
       text-align: left;
       font-size: 0.8125rem;
+      table-layout: fixed;
+    }
+
+    /* Cân bằng chiều rộng các cột dữ liệu (trừ cột tên đơn vị) */
+    table th:not(:first-child),
+    table td:not(:first-child) {
+      width: 65px;
     }
 
     th {
