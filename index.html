@@ -813,44 +813,34 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      background: linear-gradient(135deg, #F26522 0%, #FF8F00 35%, #FF6F00 65%, #E65100 100%);
+      background: #0a0a0a;
       animation: loginFadeIn 0.5s ease-out;
       overflow: hidden;
     }
 
-    /* Animated floating shapes background */
-    #loginOverlay::before {
+    /* Background image layer */
+    .login-bg {
+      position: absolute;
+      inset: 0;
+      background: url('GHN.png') center center / cover no-repeat;
+      animation: loginBgZoom 20s ease-in-out infinite alternate;
+    }
+
+    .login-bg::after {
       content: '';
       position: absolute;
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
-      border-radius: 50%;
-      top: -150px;
-      right: -100px;
-      animation: loginFloat1 8s ease-in-out infinite;
+      inset: 0;
+      background: linear-gradient(
+        135deg,
+        rgba(242, 101, 34, 0.55) 0%,
+        rgba(0, 0, 0, 0.45) 40%,
+        rgba(0, 0, 0, 0.6) 100%
+      );
     }
 
-    #loginOverlay::after {
-      content: '';
-      position: absolute;
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
-      border-radius: 50%;
-      bottom: -120px;
-      left: -80px;
-      animation: loginFloat2 10s ease-in-out infinite;
-    }
-
-    @keyframes loginFloat1 {
-      0%, 100% { transform: translate(0, 0) scale(1); }
-      50% { transform: translate(-30px, 20px) scale(1.05); }
-    }
-
-    @keyframes loginFloat2 {
-      0%, 100% { transform: translate(0, 0) scale(1); }
-      50% { transform: translate(20px, -30px) scale(1.08); }
+    @keyframes loginBgZoom {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.08); }
     }
 
     @keyframes loginFadeIn {
@@ -865,7 +855,7 @@
 
     @keyframes loginIconBounce {
       0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
+      50% { transform: translateY(-6px); }
     }
 
     @keyframes loginShake {
@@ -880,15 +870,17 @@
     }
 
     .login-card {
-      background: rgba(255, 255, 255, 0.97);
-      border: none;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       border-radius: 24px;
       padding: 3rem 2.5rem;
       width: 100%;
       max-width: 420px;
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25),
-                  0 0 0 1px rgba(255, 255, 255, 0.3);
-      animation: loginSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      animation: loginSlideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
       position: relative;
       z-index: 1;
       overflow: hidden;
@@ -900,13 +892,20 @@
       top: 0;
       left: 0;
       right: 0;
-      height: 5px;
-      background: linear-gradient(90deg, #F26522, #FF8F00, #F26522);
+      height: 4px;
+      background: linear-gradient(90deg, #F26522, #FF8F00, #FFB74D, #FF8F00, #F26522);
     }
 
     .login-logo-area {
       text-align: center;
       margin-bottom: 0.75rem;
+    }
+
+    .login-logo-img {
+      width: 160px;
+      height: auto;
+      filter: brightness(1.1) drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+      margin-bottom: 0.5rem;
     }
 
     .login-logo-icon {
@@ -918,30 +917,31 @@
       background: linear-gradient(135deg, #F26522 0%, #FF8F00 100%);
       border-radius: 20px;
       font-size: 2.2rem;
-      box-shadow: 0 8px 25px rgba(242, 101, 34, 0.35);
+      box-shadow: 0 8px 25px rgba(242, 101, 34, 0.4);
       animation: loginIconBounce 3s ease-in-out infinite;
       margin-bottom: 1rem;
     }
 
     .login-title {
-      font-size: 1.6rem;
+      font-size: 1.5rem;
       font-weight: 800;
       text-align: center;
-      color: #1a1a2e;
-      margin-bottom: 0.35rem;
+      color: #ffffff;
+      margin-bottom: 0.3rem;
       letter-spacing: -0.02em;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.3);
       background: none;
       -webkit-background-clip: unset;
       -webkit-text-fill-color: unset;
     }
 
     .login-title span {
-      color: #F26522;
+      color: #FFB74D;
     }
 
     .login-subtitle {
       text-align: center;
-      color: #888;
+      color: rgba(255, 255, 255, 0.7);
       font-size: 0.9rem;
       margin-bottom: 2rem;
     }
@@ -962,7 +962,7 @@
       top: 50%;
       transform: translateY(-50%);
       font-size: 1.1rem;
-      opacity: 0.5;
+      opacity: 0.6;
       z-index: 1;
       pointer-events: none;
     }
@@ -970,10 +970,10 @@
     .login-input {
       width: 100%;
       padding: 0.95rem 1rem 0.95rem 3rem;
-      background: #f8f9fa;
-      border: 2px solid #e9ecef;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
       border-radius: 14px;
-      color: #1a1a2e;
+      color: #ffffff;
       font-size: 1rem;
       font-family: var(--font-family);
       outline: none;
@@ -985,20 +985,20 @@
     .login-input::placeholder {
       letter-spacing: 0.02em;
       text-align: left;
-      color: #adb5bd;
+      color: rgba(255, 255, 255, 0.45);
     }
 
     .login-input:focus {
       border-color: #F26522;
-      background: #fff;
-      box-shadow: 0 0 0 4px rgba(242, 101, 34, 0.1),
-                  0 4px 12px rgba(242, 101, 34, 0.08);
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 0 0 4px rgba(242, 101, 34, 0.2),
+                  0 4px 16px rgba(242, 101, 34, 0.15);
     }
 
     .login-input.shake {
       animation: loginShake 0.5s ease;
       border-color: #ef4444 !important;
-      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1) !important;
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2) !important;
     }
 
     .login-btn {
@@ -1015,8 +1015,9 @@
       transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.15);
     }
 
     .login-btn::before {
@@ -1032,8 +1033,8 @@
 
     .login-btn:hover {
       background: linear-gradient(135deg, #E55A1B 0%, #F07D00 100%);
-      box-shadow: 0 8px 30px rgba(242, 101, 34, 0.4),
-                  0 2px 8px rgba(242, 101, 34, 0.2);
+      box-shadow: 0 8px 30px rgba(242, 101, 34, 0.5),
+                  0 2px 8px rgba(242, 101, 34, 0.3);
       transform: translateY(-2px);
     }
 
@@ -1054,14 +1055,14 @@
     }
 
     .login-error {
-      color: #dc2626;
+      color: #fca5a5;
       font-size: 0.85rem;
       text-align: center;
       display: none;
       margin-top: 0.25rem;
       padding: 0.6rem 0.75rem;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
       border-radius: 10px;
       animation: loginFadeIn 0.3s ease;
     }
@@ -1070,12 +1071,12 @@
       text-align: center;
       margin-top: 1.75rem;
       padding-top: 1.25rem;
-      border-top: 1px solid #f0f0f0;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .login-footer-text {
       font-size: 0.78rem;
-      color: #aaa;
+      color: rgba(255, 255, 255, 0.45);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1083,7 +1084,7 @@
     }
 
     .login-footer-text span {
-      color: #F26522;
+      color: #FFB74D;
       font-weight: 600;
     }
 
@@ -1123,14 +1124,14 @@
       }
 
       .login-title {
-        font-size: 1.3rem;
+        font-size: 1.25rem;
       }
 
       .login-logo-icon {
-        width: 60px;
-        height: 60px;
-        font-size: 1.8rem;
-        border-radius: 16px;
+        width: 56px;
+        height: 56px;
+        font-size: 1.6rem;
+        border-radius: 14px;
       }
     }
   </style>
@@ -1139,11 +1140,12 @@
 
   <!-- ========== LOGIN OVERLAY ========== -->
   <div id="loginOverlay">
+    <div class="login-bg"></div>
     <div class="login-card">
       <div class="login-logo-area">
         <div class="login-logo-icon">📊</div>
       </div>
-      <h1 class="login-title">HR <span>Operations</span></h1>
+      <h1 class="login-title">HR <span>Operations</span> Dashboard</h1>
       <p class="login-subtitle">Nhập mã truy cập để vào hệ thống</p>
       <div class="login-form">
         <div class="login-input-group">
@@ -1154,7 +1156,7 @@
       </div>
       <p id="loginError" class="login-error"></p>
       <div class="login-footer">
-        <div class="login-footer-text">🔒 Hệ thống được bảo mật bởi <span>HR Ops</span></div>
+        <div class="login-footer-text">🔒 Hệ thống được bảo mật bởi <span>GiaoHangNhanh</span></div>
       </div>
     </div>
   </div>
