@@ -813,11 +813,44 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      background: radial-gradient(ellipse at 30% 20%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
-                  radial-gradient(ellipse at 70% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
-                  var(--bg-primary);
-      backdrop-filter: blur(20px);
+      background: linear-gradient(135deg, #F26522 0%, #FF8F00 35%, #FF6F00 65%, #E65100 100%);
       animation: loginFadeIn 0.5s ease-out;
+      overflow: hidden;
+    }
+
+    /* Animated floating shapes background */
+    #loginOverlay::before {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+      border-radius: 50%;
+      top: -150px;
+      right: -100px;
+      animation: loginFloat1 8s ease-in-out infinite;
+    }
+
+    #loginOverlay::after {
+      content: '';
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+      border-radius: 50%;
+      bottom: -120px;
+      left: -80px;
+      animation: loginFloat2 10s ease-in-out infinite;
+    }
+
+    @keyframes loginFloat1 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(-30px, 20px) scale(1.05); }
+    }
+
+    @keyframes loginFloat2 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(20px, -30px) scale(1.08); }
     }
 
     @keyframes loginFadeIn {
@@ -826,33 +859,38 @@
     }
 
     @keyframes loginSlideUp {
-      from { opacity: 0; transform: translateY(30px) scale(0.96); }
+      from { opacity: 0; transform: translateY(40px) scale(0.95); }
       to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
-    @keyframes loginIconPulse {
-      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.4)); }
-      50% { transform: scale(1.08); filter: drop-shadow(0 0 20px rgba(6, 182, 212, 0.7)); }
+    @keyframes loginIconBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
     }
 
     @keyframes loginShake {
       0%, 100% { transform: translateX(0); }
-      10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
-      20%, 40%, 60%, 80% { transform: translateX(4px); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
     }
 
     .login-card {
-      background: linear-gradient(145deg, rgba(17, 24, 39, 0.95) 0%, rgba(9, 13, 22, 0.98) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.97);
+      border: none;
+      border-radius: 24px;
       padding: 3rem 2.5rem;
       width: 100%;
       max-width: 420px;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5),
-                  0 0 80px rgba(6, 182, 212, 0.05),
-                  inset 0 1px 0 rgba(255, 255, 255, 0.05);
-      animation: loginSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25),
+                  0 0 0 1px rgba(255, 255, 255, 0.3);
+      animation: loginSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
       position: relative;
+      z-index: 1;
       overflow: hidden;
     }
 
@@ -862,32 +900,48 @@
       top: 0;
       left: 0;
       right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-      opacity: 0.6;
+      height: 5px;
+      background: linear-gradient(90deg, #F26522, #FF8F00, #F26522);
     }
 
-    .login-icon {
-      font-size: 3.5rem;
+    .login-logo-area {
       text-align: center;
-      margin-bottom: 1.5rem;
-      animation: loginIconPulse 3s ease-in-out infinite;
+      margin-bottom: 0.75rem;
+    }
+
+    .login-logo-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, #F26522 0%, #FF8F00 100%);
+      border-radius: 20px;
+      font-size: 2.2rem;
+      box-shadow: 0 8px 25px rgba(242, 101, 34, 0.35);
+      animation: loginIconBounce 3s ease-in-out infinite;
+      margin-bottom: 1rem;
     }
 
     .login-title {
-      font-size: 1.5rem;
-      font-weight: 700;
+      font-size: 1.6rem;
+      font-weight: 800;
       text-align: center;
-      background: linear-gradient(135deg, #ffffff 0%, var(--cyan) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 0.5rem;
+      color: #1a1a2e;
+      margin-bottom: 0.35rem;
       letter-spacing: -0.02em;
+      background: none;
+      -webkit-background-clip: unset;
+      -webkit-text-fill-color: unset;
+    }
+
+    .login-title span {
+      color: #F26522;
     }
 
     .login-subtitle {
       text-align: center;
-      color: var(--text-muted);
+      color: #888;
       font-size: 0.9rem;
       margin-bottom: 2rem;
     }
@@ -898,97 +952,139 @@
       gap: 1rem;
     }
 
+    .login-input-group {
+      position: relative;
+    }
+
+    .login-input-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.1rem;
+      opacity: 0.5;
+      z-index: 1;
+      pointer-events: none;
+    }
+
     .login-input {
       width: 100%;
-      padding: 0.85rem 1.15rem;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      color: var(--text-main);
+      padding: 0.95rem 1rem 0.95rem 3rem;
+      background: #f8f9fa;
+      border: 2px solid #e9ecef;
+      border-radius: 14px;
+      color: #1a1a2e;
       font-size: 1rem;
       font-family: var(--font-family);
       outline: none;
       transition: all 0.3s ease;
-      letter-spacing: 0.15em;
-      text-align: center;
+      letter-spacing: 0.2em;
+      text-align: left;
     }
 
     .login-input::placeholder {
       letter-spacing: 0.02em;
-      text-align: center;
-      color: var(--text-dim);
+      text-align: left;
+      color: #adb5bd;
     }
 
     .login-input:focus {
-      border-color: var(--cyan);
-      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15),
-                  0 0 20px rgba(6, 182, 212, 0.1);
-      background: rgba(255, 255, 255, 0.06);
+      border-color: #F26522;
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(242, 101, 34, 0.1),
+                  0 4px 12px rgba(242, 101, 34, 0.08);
     }
 
     .login-input.shake {
       animation: loginShake 0.5s ease;
-      border-color: var(--red) !important;
-      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1) !important;
     }
 
     .login-btn {
       width: 100%;
-      padding: 0.85rem;
-      background: linear-gradient(135deg, var(--cyan) 0%, #0891b2 100%);
+      padding: 0.95rem;
+      background: linear-gradient(135deg, #F26522 0%, #FF8F00 100%);
       border: none;
-      border-radius: 12px;
-      color: #000;
-      font-size: 1rem;
+      border-radius: 14px;
+      color: #fff;
+      font-size: 1.05rem;
       font-weight: 700;
       font-family: var(--font-family);
       cursor: pointer;
       transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
     }
 
     .login-btn::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
-      transform: translateX(-100%);
-      transition: transform 0.5s ease;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+      background-size: 200% 100%;
+      animation: shimmer 2s infinite;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
 
     .login-btn:hover {
-      background: linear-gradient(135deg, var(--cyan-hover) 0%, #06b6d4 100%);
-      box-shadow: 0 8px 25px rgba(6, 182, 212, 0.3),
-                  0 0 40px rgba(6, 182, 212, 0.1);
-      transform: translateY(-1px);
+      background: linear-gradient(135deg, #E55A1B 0%, #F07D00 100%);
+      box-shadow: 0 8px 30px rgba(242, 101, 34, 0.4),
+                  0 2px 8px rgba(242, 101, 34, 0.2);
+      transform: translateY(-2px);
     }
 
     .login-btn:hover::before {
-      transform: translateX(100%);
+      opacity: 1;
     }
 
     .login-btn:active {
       transform: translateY(0) scale(0.98);
+      box-shadow: 0 4px 15px rgba(242, 101, 34, 0.3);
     }
 
     .login-btn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
       transform: none;
+      box-shadow: none;
     }
 
     .login-error {
-      color: var(--red);
+      color: #dc2626;
       font-size: 0.85rem;
       text-align: center;
       display: none;
       margin-top: 0.25rem;
-      padding: 0.5rem 0.75rem;
-      background: var(--red-bg);
-      border: 1px solid var(--red-border);
-      border-radius: 8px;
+      padding: 0.6rem 0.75rem;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
       animation: loginFadeIn 0.3s ease;
+    }
+
+    .login-footer {
+      text-align: center;
+      margin-top: 1.75rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .login-footer-text {
+      font-size: 0.78rem;
+      color: #aaa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+
+    .login-footer-text span {
+      color: #F26522;
+      font-weight: 600;
     }
 
     /* LOGOUT BUTTON */
@@ -996,9 +1092,9 @@
       display: none;
       align-items: center;
       gap: 0.5rem;
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.25);
-      color: var(--red);
+      background: rgba(242, 101, 34, 0.1);
+      border: 1px solid rgba(242, 101, 34, 0.25);
+      color: #F26522;
       padding: 0.5rem 1rem;
       border-radius: 8px;
       font-size: 0.875rem;
@@ -1009,9 +1105,9 @@
     }
 
     .logout-btn:hover {
-      background: rgba(239, 68, 68, 0.2);
-      border-color: rgba(239, 68, 68, 0.4);
-      box-shadow: 0 0 15px rgba(239, 68, 68, 0.1);
+      background: rgba(242, 101, 34, 0.2);
+      border-color: rgba(242, 101, 34, 0.4);
+      box-shadow: 0 0 15px rgba(242, 101, 34, 0.15);
     }
 
     .logout-btn:active {
@@ -1023,14 +1119,18 @@
       .login-card {
         margin: 1rem;
         padding: 2rem 1.5rem;
+        border-radius: 20px;
       }
 
       .login-title {
-        font-size: 1.25rem;
+        font-size: 1.3rem;
       }
 
-      .login-icon {
-        font-size: 2.5rem;
+      .login-logo-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.8rem;
+        border-radius: 16px;
       }
     }
   </style>
@@ -1040,14 +1140,22 @@
   <!-- ========== LOGIN OVERLAY ========== -->
   <div id="loginOverlay">
     <div class="login-card">
-      <div class="login-icon">🔒</div>
-      <h1 class="login-title">HR Operations Dashboard</h1>
-      <p class="login-subtitle">Vui lòng đăng nhập để tiếp tục</p>
+      <div class="login-logo-area">
+        <div class="login-logo-icon">📊</div>
+      </div>
+      <h1 class="login-title">HR <span>Operations</span></h1>
+      <p class="login-subtitle">Nhập mã truy cập để vào hệ thống</p>
       <div class="login-form">
-        <input type="password" id="loginPassword" class="login-input" placeholder="Nhập mật khẩu..." autocomplete="current-password" />
+        <div class="login-input-group">
+          <span class="login-input-icon">🔑</span>
+          <input type="password" id="loginPassword" class="login-input" placeholder="Nhập mã đăng nhập..." autocomplete="current-password" />
+        </div>
         <button id="loginBtn" class="login-btn" onclick="handleLogin()">Đăng nhập</button>
       </div>
       <p id="loginError" class="login-error"></p>
+      <div class="login-footer">
+        <div class="login-footer-text">🔒 Hệ thống được bảo mật bởi <span>HR Ops</span></div>
+      </div>
     </div>
   </div>
 
