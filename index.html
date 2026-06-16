@@ -1183,6 +1183,9 @@
       </div>
     </div>
     <div class="header-right">
+      <button class="btn" id="telegramBtn" onclick="sendTelegram()" title="Gửi báo cáo qua Telegram">
+        📤 Gửi Telegram
+      </button>
       <button class="btn" id="refreshBtn" onclick="loadData()">
         <span id="refreshIcon">🔄</span> Tải lại dữ liệu
       </button>
@@ -2480,6 +2483,49 @@
       } finally {
         showLoading(false);
       }
+    }
+
+    // ========== TELEGRAM SEND ==========
+    async function sendTelegram() {
+      const btn = document.getElementById('telegramBtn');
+      if (!btn) return;
+
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Đang gửi...';
+
+      try {
+        const response = await fetch('/api/telegram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          btn.innerHTML = '✅ Đã gửi!';
+          btn.style.borderColor = 'var(--green)';
+          btn.style.color = 'var(--green)';
+        } else {
+          btn.innerHTML = '❌ Lỗi gửi';
+          btn.style.borderColor = 'var(--red)';
+          btn.style.color = 'var(--red)';
+          console.error('Telegram error:', data.error);
+        }
+      } catch (err) {
+        btn.innerHTML = '❌ Lỗi kết nối';
+        btn.style.borderColor = 'var(--red)';
+        btn.style.color = 'var(--red)';
+        console.error('Fetch error:', err);
+      }
+
+      // Reset button sau 3 giây
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.style.borderColor = '';
+        btn.style.color = '';
+      }, 3000);
     }
 
     // ========== AUTH LOGIC ==========
