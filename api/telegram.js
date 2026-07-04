@@ -1,22 +1,93 @@
 // api/telegram.js — Vercel Serverless Function
 // Gửi thông báo Top 10 Bưu cục nghỉ nhiều nhất + Top 10 Cảnh báo rủi ro qua Telegram
+// Sửa lỗi: C3 (unauthenticated), H1 (no CSRF), rate-limiting
 
+const { validateToken } = require('./validate-token');
+
+// ============================================================
+// RATE LIMITING — In-memory, 1 request/phút per IP
+// ============================================================
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 phút
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  
+  // Dọn dẹp entries cũ
+  for (const [key, timestamp] of rateLimitMap.entries()) {
+    if (now - timestamp > RATE_LIMIT_WINDOW_MS) {
+      rateLimitMap.delete(key);
+    }
+  }
+
+  if (rateLimitMap.has(ip)) {
+    const lastCall = rateLimitMap.get(ip);
+    if (now - lastCall < RATE_LIMIT_WINDOW_MS) {
+      return true;
+    }
+  }
+
+  rateLimitMap.set(ip, now);
+  return false;
+}
+
+// ============================================================
+// MAIN HANDLER
+// ============================================================
 module.exports = async (req, res) => {
-  // Cho phép cả GET (từ cron) và POST (từ nút bấm)
+  // ---------- 1. Kiểm tra method ----------
+  // Chỉ cho phép POST (từ UI) hoặc GET (chỉ từ Vercel Cron với CRON_SECRET)
+  const cronSecret = process.env.CRON_SECRET;
+  const isCronRequest = req.method === 'GET' 
+    && cronSecret 
+    && req.headers.authorization === `Bearer ${cronSecret}`;
+
+  if (req.method === 'GET' && !isCronRequest) {
+    // GET request không phải cron → từ chối
+    return res.status(405).json({ error: 'Method not allowed. Chỉ chấp nhận POST.' });
+  }
+
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Xác thực cron secret (nếu có) hoặc cho phép gọi trực tiếp
-  const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && req.headers.authorization !== `Bearer ${cronSecret}`) {
-    // Nếu không phải cron request hợp lệ, kiểm tra có phải từ UI không
-    const isManualTrigger = req.method === 'POST';
-    if (!isManualTrigger) {
-      return res.status(401).json({ error: 'Unauthorized' });
+  // ---------- 2. Xác thực ----------
+  if (!isCronRequest) {
+    // Yêu cầu token cho request từ UI
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Chưa xác thực. Vui lòng đăng nhập.' });
+    }
+
+    const token = authHeader.substring(7);
+    if (!validateToken(token)) {
+      return res.status(401).json({ error: 'Token không hợp lệ hoặc đã hết hạn.' });
+    }
+
+    // Origin validation — chống CSRF
+    const allowedOrigins = [
+      'https://db-nh-n-s-region.vercel.app',
+      'http://localhost:3000',
+      'http://localhost:5000',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:5000'
+    ];
+    const origin = req.headers.origin || '';
+    if (origin && !allowedOrigins.some(o => origin.startsWith(o))) {
+      return res.status(403).json({ error: 'Origin không được phép' });
     }
   }
 
+  // ---------- 3. Rate limiting ----------
+  const clientIP = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown';
+  if (!isCronRequest && isRateLimited(clientIP)) {
+    res.setHeader('Retry-After', '60');
+    return res.status(429).json({ 
+      error: 'Quá nhiều yêu cầu. Vui lòng đợi 1 phút trước khi gửi lại.' 
+    });
+  }
+
+  // ---------- 4. Xử lý gửi Telegram ----------
   const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
   const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
@@ -28,7 +99,7 @@ module.exports = async (req, res) => {
 
   try {
     // 1. Fetch dữ liệu từ Google Sheets — sheet "Theo bưu cục"
-    const SHEET_ID = '1bc-sCXqlvmRV_j2uGTxUH7sGICDyVqSCVf-kgLg_Apk';
+    const SHEET_ID = process.env.GOOGLE_SHEET_ID || '1bc-sCXqlvmRV_j2uGTxUH7sGICDyVqSCVf-kgLg_Apk';
     const sheetData = await fetchGoogleSheet(SHEET_ID, 'Theo bưu cục');
     const postOffices = parsePostOfficeData(sheetData);
 

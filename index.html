@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
   <title>Nhân Sự Khối Thị Trường</title>
   <style>
     /* DESIGN SYSTEM & GLOBAL STYLES — Light Theme (SCommerce Style) */
@@ -1615,9 +1616,15 @@
       }
     };
 
-    // SHEET CONFIGURATION
-    const SHEET_ID = "1bc-sCXqlvmRV_j2uGTxUH7sGICDyVqSCVf-kgLg_Apk";
-    const BASE_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=`;
+    // AUTH TOKEN — lưu token từ server sau khi đăng nhập
+    function getAuthToken() {
+      return sessionStorage.getItem('auth_token');
+    }
+
+    function getAuthHeaders() {
+      const token = getAuthToken();
+      return token ? { 'Authorization': `Bearer ${token}` } : {};
+    }
 
     // UTILITY: Parse JSON values safely
     function getStr(row, idx, fallback = "") {
@@ -1680,36 +1687,37 @@
       return '17/05/2026'; // Default fallback
     }
 
-    // DATA FETCHER — Sử dụng fetch() API thay vì JSONP (an toàn hơn, tránh chèn script từ bên ngoài)
-    // Lưu ý: Cần deploy trên web server (Vercel). Nếu mở từ file://, dùng local dev server (npx serve)
+    // DATA FETCHER — Gọi qua server proxy /api/data (BẢO MẬT: Sheet ID không lộ cho client)
     async function fetchSheet(sheetName) {
-      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+      const url = `/api/data?sheet=${encodeURIComponent(sheetName)}`;
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
 
       try {
-        const response = await fetch(url, { signal: controller.signal });
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: getAuthHeaders()
+        });
         clearTimeout(timeoutId);
 
-        if (!response.ok) {
-          throw new Error(`Lỗi mạng hoặc không có quyền truy cập sheet: ${sheetName}`);
+        if (response.status === 401) {
+          // Token hết hạn hoặc không hợp lệ → force re-login
+          sessionStorage.removeItem('auth_token');
+          location.reload();
+          throw new Error('Phiên đăng nhập đã hết hạn');
         }
 
-        const text = await response.text();
-        // Loại bỏ wrapper JSONP: "/*O_o*/\ngoogle.visualization.Query.setResponse({...})"
-        const prefix = 'google.visualization.Query.setResponse(';
-        const startIdx = text.indexOf(prefix);
-        if (startIdx === -1) {
-          throw new Error(`Dữ liệu từ sheet "${sheetName}" không hợp lệ`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Lỗi tải dữ liệu từ sheet: ${sheetName}`);
         }
-        const jsonStr = text.substring(startIdx + prefix.length, text.lastIndexOf(')'));
-        const data = JSON.parse(jsonStr);
+
+        const data = await response.json();
 
         if (data && data.status === 'ok') {
           return data;
         } else if (data && data.status === 'error') {
-          // BẢO MẬT: Không hiển thị chi tiết lỗi từ API cho người dùng
           console.error(`Chi tiết lỗi sheet "${sheetName}":`, data.errors);
           throw new Error(`Lỗi khi tải dữ liệu từ sheet: ${sheetName}`);
         } else {
@@ -2489,7 +2497,7 @@
       }
     }
 
-    // ========== TELEGRAM SEND ==========
+    // ========== TELEGRAM SEND (BẢO MẬT: Gửi kèm auth token) ==========
     async function sendTelegram() {
       const btn = document.getElementById('telegramBtn');
       if (!btn) return;
@@ -2501,8 +2509,17 @@
       try {
         const response = await fetch('/api/telegram', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders()
+          }
         });
+
+        if (response.status === 401) {
+          sessionStorage.removeItem('auth_token');
+          location.reload();
+          return;
+        }
 
         const data = await response.json();
 
@@ -2510,6 +2527,10 @@
           btn.innerHTML = '✅ Đã gửi!';
           btn.style.borderColor = 'var(--green)';
           btn.style.color = 'var(--green)';
+        } else if (response.status === 429) {
+          btn.innerHTML = '⏱️ Chờ 1 phút';
+          btn.style.borderColor = 'var(--orange)';
+          btn.style.color = 'var(--orange)';
         } else {
           btn.innerHTML = '❌ Lỗi gửi';
           btn.style.borderColor = 'var(--red)';
@@ -2532,10 +2553,10 @@
       }, 3000);
     }
 
-    // ========== AUTH LOGIC ==========
-    const PASSCODE = '1612';
+    // ========== AUTH LOGIC (BẢO MẬT: Xác thực qua server /api/verify) ==========
+    // KHÔNG CÒN hardcoded passcode — mật khẩu chỉ tồn tại trên server (env DASHBOARD_PASSWORD)
 
-    function handleLogin() {
+    async function handleLogin() {
       const password = document.getElementById('loginPassword').value;
       const errorEl = document.getElementById('loginError');
       const btn = document.getElementById('loginBtn');
@@ -2553,10 +2574,20 @@
       btn.textContent = 'Đang xác thực...';
       errorEl.style.display = 'none';
 
-      // Simulated delay for better UX
-      setTimeout(() => {
-        if (password === PASSCODE) {
-          sessionStorage.setItem('auth_token', 'authenticated');
+      try {
+        // Gọi server để xác thực — KHÔNG so sánh client-side
+        const response = await fetch('/api/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success && data.token) {
+          // Server xác nhận đúng — lưu token thật (không phải chuỗi cố định)
+          sessionStorage.setItem('auth_token', data.token);
+
           // Fade out animation
           const overlay = document.getElementById('loginOverlay');
           overlay.style.transition = 'opacity 0.4s ease';
@@ -2568,6 +2599,7 @@
             loadData();
           }, 400);
         } else {
+          // Sai mật khẩu
           errorEl.textContent = '⛔ Mã đăng nhập không đúng. Vui lòng thử lại.';
           errorEl.style.display = 'block';
           inputEl.value = '';
@@ -2575,10 +2607,14 @@
           inputEl.classList.add('shake');
           setTimeout(() => inputEl.classList.remove('shake'), 500);
         }
+      } catch (err) {
+        console.error('Login error:', err);
+        errorEl.textContent = '❌ Lỗi kết nối server. Vui lòng thử lại.';
+        errorEl.style.display = 'block';
+      }
 
-        btn.disabled = false;
-        btn.textContent = 'Đăng nhập';
-      }, 600);
+      btn.disabled = false;
+      btn.textContent = 'Đăng nhập';
     }
 
     function handleLogout() {
@@ -2593,14 +2629,18 @@
 
     // AUTO INITIALIZATION — kiểm tra auth trước khi tải dữ liệu
     window.addEventListener('DOMContentLoaded', () => {
-      if (sessionStorage.getItem('auth_token')) {
-        // Đã đăng nhập
+      const token = sessionStorage.getItem('auth_token');
+      // Token hợp lệ phải là hex string dài (từ crypto.randomBytes)
+      // Không chấp nhận chuỗi cố định 'authenticated' cũ
+      if (token && token.length >= 32 && /^[a-f0-9]+$/i.test(token)) {
+        // Đã đăng nhập với token hợp lệ
         document.getElementById('loginOverlay').style.display = 'none';
         document.getElementById('logoutBtn').style.display = 'flex';
         document.body.style.overflow = '';
         loadData();
       } else {
-        // Chưa đăng nhập — hiện login, ẩn dashboard
+        // Token không hợp lệ hoặc chưa đăng nhập — xóa token cũ nếu có
+        sessionStorage.removeItem('auth_token');
         document.getElementById('loginOverlay').style.display = 'flex';
         document.body.style.overflow = 'hidden';
         document.getElementById('loginPassword').focus();
