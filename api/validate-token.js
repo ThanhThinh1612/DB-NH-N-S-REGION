@@ -1,64 +1,96 @@
 // api/validate-token.js — Module quản lý token xác thực
-// Dùng in-memory Map với TTL. Được chia sẻ giữa verify.js, data.js, telegram.js
-//
-// Lưu ý: Trên Vercel Serverless, mỗi instance có bộ nhớ riêng.
-// Token có thể bị invalidate khi function cold-start.
-// Đây là trade-off chấp nhận được cho use case nội bộ.
-// Nếu cần persistence, chuyển sang Vercel KV hoặc Redis.
+// Dùng HMAC-signed token (stateless) thay vì in-memory Map
+// Mỗi Vercel serverless function instance có thể verify token độc lập
+// không cần shared memory.
+
+const crypto = require('crypto');
+
+// Secret key để ký token — đọc từ env hoặc derive từ DASHBOARD_PASSWORD
+function getSecret() {
+  const secret = process.env.TOKEN_SECRET || process.env.DASHBOARD_PASSWORD;
+  if (!secret) throw new Error('TOKEN_SECRET or DASHBOARD_PASSWORD env var required');
+  return secret;
+}
 
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 giờ
 
-// Token store: Map<token_string, { createdAt: number }>
-const tokenStore = new Map();
-
 /**
- * Lưu token mới vào store
- * @param {string} token 
+ * Tạo signed token mới
+ * Token format: base64(payload).base64(hmac_signature)
+ * Payload chứa timestamp tạo token
+ * @returns {string} signed token
  */
-function storeToken(token) {
-  // Dọn dẹp token hết hạn trước khi thêm mới
-  cleanExpiredTokens();
-  tokenStore.set(token, { createdAt: Date.now() });
+function createToken() {
+  const payload = JSON.stringify({ iat: Date.now() });
+  const payloadB64 = Buffer.from(payload).toString('base64url');
+  
+  const hmac = crypto.createHmac('sha256', getSecret());
+  hmac.update(payloadB64);
+  const signature = hmac.digest('base64url');
+  
+  return `${payloadB64}.${signature}`;
 }
 
 /**
- * Kiểm tra token có hợp lệ không
+ * Kiểm tra token có hợp lệ không (stateless — không cần shared memory)
  * @param {string} token 
  * @returns {boolean}
  */
 function validateToken(token) {
-  if (!token || !tokenStore.has(token)) return false;
-
-  const entry = tokenStore.get(token);
-  const age = Date.now() - entry.createdAt;
-
-  if (age > TOKEN_TTL_MS) {
-    // Token hết hạn — xóa khỏi store
-    tokenStore.delete(token);
+  if (!token || typeof token !== 'string') return false;
+  
+  const parts = token.split('.');
+  if (parts.length !== 2) return false;
+  
+  const [payloadB64, signature] = parts;
+  
+  // Verify HMAC signature
+  try {
+    const hmac = crypto.createHmac('sha256', getSecret());
+    hmac.update(payloadB64);
+    const expectedSig = hmac.digest('base64url');
+    
+    // Timing-safe comparison
+    if (!timingSafeCompare(signature, expectedSig)) return false;
+    
+    // Parse payload & check expiry
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
+    const age = Date.now() - payload.iat;
+    
+    if (age < 0 || age > TOKEN_TTL_MS) return false;
+    
+    return true;
+  } catch (e) {
     return false;
   }
-
-  return true;
 }
 
 /**
- * Xóa token (dùng khi logout)
- * @param {string} token 
+ * Timing-safe string comparison
  */
-function removeToken(token) {
-  tokenStore.delete(token);
-}
-
-/**
- * Dọn dẹp các token đã hết hạn
- */
-function cleanExpiredTokens() {
-  const now = Date.now();
-  for (const [token, entry] of tokenStore.entries()) {
-    if (now - entry.createdAt > TOKEN_TTL_MS) {
-      tokenStore.delete(token);
-    }
+function timingSafeCompare(a, b) {
+  const bufA = Buffer.from(String(a));
+  const bufB = Buffer.from(String(b));
+  
+  if (bufA.length !== bufB.length) {
+    const padded = Buffer.alloc(bufB.length);
+    bufA.copy(padded);
+    crypto.timingSafeEqual(padded, bufB);
+    return false;
   }
+  
+  return crypto.timingSafeEqual(bufA, bufB);
 }
 
-module.exports = { storeToken, validateToken, removeToken };
+// Backward compatibility exports
+function storeToken(token) {
+  // No-op: tokens are now stateless (self-contained signed tokens)
+  // This function exists only for backward compatibility with verify.js
+}
+
+function removeToken(token) {
+  // No-op: stateless tokens can't be revoked individually
+  // Token will naturally expire after TTL
+}
+
+module.exports = { createToken, validateToken, storeToken, removeToken };

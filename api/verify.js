@@ -3,7 +3,7 @@
 // Sửa lỗi: C1 (hardcoded passcode), M2 (sessionStorage auth không có server validation)
 // Tuân thủ security-rules.md: rate-limit, timing-safe compare, Origin validation
 
-const { storeToken } = require('./validate-token');
+const { createToken } = require('./validate-token');
 
 // ============================================================
 // RATE LIMITING — Brute-force protection (security-rules.md: "account lockout or backoff")
@@ -98,12 +98,8 @@ module.exports = (req, res) => {
     // Đăng nhập thành công — xóa record brute-force
     clearAttempts(clientIP);
 
-    // Tạo token ngẫu nhiên cho session
-    const crypto = require('crypto');
-    const token = crypto.randomBytes(32).toString('hex');
-    
-    // Lưu token vào store với TTL
-    storeToken(token);
+    // Tạo signed token (stateless — mỗi serverless instance đều verify được)
+    const token = createToken();
 
     return res.status(200).json({ success: true, token });
   }

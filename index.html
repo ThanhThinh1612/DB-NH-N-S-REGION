@@ -2630,9 +2630,9 @@
     // AUTO INITIALIZATION — kiểm tra auth trước khi tải dữ liệu
     window.addEventListener('DOMContentLoaded', () => {
       const token = sessionStorage.getItem('auth_token');
-      // Token hợp lệ phải là hex string dài (từ crypto.randomBytes)
+      // Token hợp lệ: format base64url.base64url (HMAC-signed token)
       // Không chấp nhận chuỗi cố định 'authenticated' cũ
-      if (token && token.length >= 32 && /^[a-f0-9]+$/i.test(token)) {
+      if (token && token.includes('.') && token.length >= 20) {
         // Đã đăng nhập với token hợp lệ
         document.getElementById('loginOverlay').style.display = 'none';
         document.getElementById('logoutBtn').style.display = 'flex';
