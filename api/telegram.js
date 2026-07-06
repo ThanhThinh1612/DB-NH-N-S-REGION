@@ -40,6 +40,7 @@ module.exports = async (req, res) => {
   const cronSecret = process.env.CRON_SECRET;
   const isCronRequest = req.method === 'GET' 
     && cronSecret 
+    && cronSecret.length >= 16
     && req.headers.authorization === `Bearer ${cronSecret}`;
 
   if (req.method === 'GET' && !isCronRequest) {
